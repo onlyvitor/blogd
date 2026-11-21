@@ -1,8 +1,8 @@
-package com.onlyvitor.blogd.usuario.exception;
+package com.onlyvitor.blogd.user.exception;
 
-public class UsuarioJaExistenteException extends RuntimeException {
+public class UserAlreadyExistsException extends RuntimeException {
 
-    public UsuarioJaExistenteException(String usuario) {
-        super("Já existe um usuário com o nome de usuário: " + usuario);
+    public UserAlreadyExistsException(String username) {
+        super("A user already exists with username: " + username);
     }
 }

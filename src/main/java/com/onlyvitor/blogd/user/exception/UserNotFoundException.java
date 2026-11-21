@@ -1,12 +1,12 @@
-package com.onlyvitor.blogd.usuario.exception;
+package com.onlyvitor.blogd.user.exception;
 
-public class UsuarioNaoEncontradoException extends RuntimeException {
+public class UserNotFoundException extends RuntimeException {
 
-    public UsuarioNaoEncontradoException(Long id) {
-        super("Usuário não encontrado com id: " + id);
+    public UserNotFoundException(Long id) {
+        super("User not found with id: " + id);
     }
 
-    public UsuarioNaoEncontradoException(String usuario) {
-        super("Usuário não encontrado com nome de usuário: " + usuario);
+    public UserNotFoundException(String username) {
+        super("User not found with username: " + username);
     }
 }
