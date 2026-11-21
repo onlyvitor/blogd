@@ -1,11 +1,11 @@
-package com.onlyvitor.blogd.usuario.service;
+package com.onlyvitor.blogd.user.service;
 
-import com.onlyvitor.blogd.usuario.domain.Usuario;
-import com.onlyvitor.blogd.usuario.dto.UsuarioRequest;
-import com.onlyvitor.blogd.usuario.dto.UsuarioResponse;
-import com.onlyvitor.blogd.usuario.exception.UsuarioJaExistenteException;
-import com.onlyvitor.blogd.usuario.exception.UsuarioNaoEncontradoException;
-import com.onlyvitor.blogd.usuario.repository.UsuarioRepository;
+import com.onlyvitor.blogd.user.domain.User;
+import com.onlyvitor.blogd.user.dto.UserRequest;
+import com.onlyvitor.blogd.user.dto.UserResponse;
+import com.onlyvitor.blogd.user.exception.UserAlreadyExistsException;
+import com.onlyvitor.blogd.user.exception.UserNotFoundException;
+import com.onlyvitor.blogd.user.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -16,72 +16,72 @@ import java.util.stream.Collectors;
 @Service
 @RequiredArgsConstructor
 @Transactional(readOnly = true)
-public class UsuarioService {
+public class UserService {
 
-    private final UsuarioRepository usuarioRepository;
+    private final UserRepository userRepository;
 
-    public List<UsuarioResponse> listarTodos() {
-        return usuarioRepository.findAll().stream()
+    public List<UserResponse> listAll() {
+        return userRepository.findAll().stream()
                 .map(this::toResponse)
                 .collect(Collectors.toList());
     }
 
-    public UsuarioResponse buscarPorId(Long id) {
-        Usuario usuario = usuarioRepository.findById(id)
-                .orElseThrow(() -> new UsuarioNaoEncontradoException(id));
-        return toResponse(usuario);
+    public UserResponse findById(Long id) {
+        User user = userRepository.findById(id)
+                .orElseThrow(() -> new UserNotFoundException(id));
+        return toResponse(user);
     }
 
     @Transactional
-    public UsuarioResponse criar(UsuarioRequest request) {
-        if (usuarioRepository.existsByUsuario(request.getUsuario())) {
-            throw new UsuarioJaExistenteException(request.getUsuario());
+    public UserResponse create(UserRequest request) {
+        if (userRepository.existsByUsername(request.getUsername())) {
+            throw new UserAlreadyExistsException(request.getUsername());
         }
 
-        Usuario usuario = Usuario.builder()
-                .usuario(request.getUsuario())
-                .senha(request.getSenha())
+        User user = User.builder()
+                .username(request.getUsername())
+                .password(request.getPassword())
                 .email(request.getEmail())
                 .role(request.getRole())
                 .build();
 
-        Usuario salvo = usuarioRepository.save(usuario);
-        return toResponse(salvo);
+        User saved = userRepository.save(user);
+        return toResponse(saved);
     }
 
     @Transactional
-    public UsuarioResponse atualizar(Long id, UsuarioRequest request) {
-        Usuario usuario = usuarioRepository.findById(id)
-                .orElseThrow(() -> new UsuarioNaoEncontradoException(id));
+    public UserResponse update(Long id, UserRequest request) {
+        User user = userRepository.findById(id)
+                .orElseThrow(() -> new UserNotFoundException(id));
 
-        if (!usuario.getUsuario().equals(request.getUsuario())
-                && usuarioRepository.existsByUsuario(request.getUsuario())) {
-            throw new UsuarioJaExistenteException(request.getUsuario());
+        if (!user.getUsername().equals(request.getUsername())
+                && userRepository.existsByUsername(request.getUsername())) {
+            throw new UserAlreadyExistsException(request.getUsername());
         }
 
-        usuario.setUsuario(request.getUsuario());
-        usuario.setSenha(request.getSenha());
-        usuario.setEmail(request.getEmail());
-        usuario.setRole(request.getRole());
+        user.setUsername(request.getUsername());
+        user.setPassword(request.getPassword());
+        user.setEmail(request.getEmail());
+        user.setRole(request.getRole());
 
-        Usuario atualizado = usuarioRepository.save(usuario);
-        return toResponse(atualizado);
+        User updated = userRepository.save(user);
+        return toResponse(updated);
     }
 
     @Transactional
-    public void deletar(Long id) {
-        if (!usuarioRepository.existsById(id)) {
-            throw new UsuarioNaoEncontradoException(id);
+    public void delete(Long id) {
+        if (!userRepository.existsById(id)) {
+            throw new UserNotFoundException(id);
         }
-        usuarioRepository.deleteById(id);
+        userRepository.deleteById(id);
     }
 
-    private UsuarioResponse toResponse(Usuario usuario) {
-        return UsuarioResponse.builder()
-                .id(usuario.getId())
-                .usuario(usuario.getUsuario())
-                .email(usuario.getEmail())
-                .role(usuario.getRole())
+    private UserResponse toResponse(User user) {
+        return UserResponse.builder()
+                .id(user.getId())
+                .username(user.getUsername())
+                .email(user.getEmail())
+                .role(user.getRole())
                 .build();
     }
 }

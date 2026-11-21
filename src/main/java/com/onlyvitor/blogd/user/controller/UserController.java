@@ -1,8 +1,8 @@
-package com.onlyvitor.blogd.usuario.controller;
+package com.onlyvitor.blogd.user.controller;
 
-import com.onlyvitor.blogd.usuario.dto.UsuarioRequest;
-import com.onlyvitor.blogd.usuario.dto.UsuarioResponse;
-import com.onlyvitor.blogd.usuario.service.UsuarioService;
+import com.onlyvitor.blogd.user.dto.UserRequest;
+import com.onlyvitor.blogd.user.dto.UserResponse;
+import com.onlyvitor.blogd.user.service.UserService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -20,39 +20,39 @@ import org.springframework.web.bind.annotation.RestController;
 import java.util.List;
 
 @RestController
-@RequestMapping("/api/usuarios")
+@RequestMapping("/api/users")
 @RequiredArgsConstructor
-public class UsuarioController {
+public class UserController {
 
-    private final UsuarioService usuarioService;
+    private final UserService userService;
 
     @GetMapping
-    public ResponseEntity<List<UsuarioResponse>> listarTodos() {
-        return ResponseEntity.ok(usuarioService.listarTodos());
+    public ResponseEntity<List<UserResponse>> listAll() {
+        return ResponseEntity.ok(userService.listAll());
     }
 
     @GetMapping("/{id}")
-    public ResponseEntity<UsuarioResponse> buscarPorId(@PathVariable Long id) {
-        return ResponseEntity.ok(usuarioService.buscarPorId(id));
+    public ResponseEntity<UserResponse> findById(@PathVariable Long id) {
+        return ResponseEntity.ok(userService.findById(id));
     }
 
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
-    public ResponseEntity<UsuarioResponse> criar(@Valid @RequestBody UsuarioRequest request) {
-        return ResponseEntity.status(HttpStatus.CREATED).body(usuarioService.criar(request));
+    public ResponseEntity<UserResponse> create(@Valid @RequestBody UserRequest request) {
+        return ResponseEntity.status(HttpStatus.CREATED).body(userService.create(request));
     }
 
     @PutMapping("/{id}")
-    public ResponseEntity<UsuarioResponse> atualizar(
+    public ResponseEntity<UserResponse> update(
             @PathVariable Long id,
-            @Valid @RequestBody UsuarioRequest request) {
-        return ResponseEntity.ok(usuarioService.atualizar(id, request));
+            @Valid @RequestBody UserRequest request) {
+        return ResponseEntity.ok(userService.update(id, request));
     }
 
     @DeleteMapping("/{id}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
-    public ResponseEntity<Void> deletar(@PathVariable Long id) {
-        usuarioService.deletar(id);
+    public ResponseEntity<Void> delete(@PathVariable Long id) {
+        userService.delete(id);
         return ResponseEntity.noContent().build();
     }
 }
