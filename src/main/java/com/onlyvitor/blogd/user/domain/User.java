@@ -1,4 +1,4 @@
-package com.onlyvitor.blogd.usuario.domain;
+package com.onlyvitor.blogd.user.domain;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -14,22 +14,22 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 @Entity
-@Table(name = "usuarios")
+@Table(name = "users")
 @Data
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class Usuario {
+public class User {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
     @Column(nullable = false, length = 50, unique = true)
-    private String usuario;
+    private String username;
 
     @Column(nullable = false)
-    private String senha;
+    private String password;
 
     @Column(nullable = false, length = 255)
     private String email;
