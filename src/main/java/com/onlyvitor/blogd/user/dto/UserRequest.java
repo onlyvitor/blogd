@@ -1,6 +1,6 @@
-package com.onlyvitor.blogd.usuario.dto;
+package com.onlyvitor.blogd.user.dto;
 
-import com.onlyvitor.blogd.usuario.domain.Role;
+import com.onlyvitor.blogd.user.domain.Role;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
@@ -15,23 +15,23 @@ import lombok.NoArgsConstructor;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class UsuarioRequest {
+public class UserRequest {
 
-    @NotBlank(message = "O nome de usuário é obrigatório")
-    @Size(min = 3, max = 50, message = "O nome de usuário deve ter entre 3 e 50 caracteres")
-    private String usuario;
+    @NotBlank(message = "Username is required")
+    @Size(min = 3, max = 50, message = "Username must be between 3 and 50 characters")
+    private String username;
 
-    @NotBlank(message = "A senha é obrigatória")
+    @NotBlank(message = "Password is required")
     @Pattern(
         regexp = "^(?=.*[0-9])(?=.*[!@#$%^&*()_+\\-=\\[\\]{};':\"\\\\|,.<>\\/?])(?=.*[A-Z])(?=.*[a-z]).{8,}$",
-        message = "A senha deve ter pelo menos 8 caracteres, incluindo uma letra maiúscula, uma letra minúscula, um número e um caractere especial"
+        message = "Password must be at least 8 characters, including one uppercase letter, one lowercase letter, one number, and one special character"
     )
-    private String senha;
+    private String password;
 
-    @NotBlank(message = "O e-mail é obrigatório")
-    @Email(message = "O e-mail deve ser um endereço de e-mail válido")
+    @NotBlank(message = "Email is required")
+    @Email(message = "Email must be a valid email address")
     private String email;
 
-    @NotNull(message = "O papel é obrigatório")
+    @NotNull(message = "Role is required")
     private Role role;
 }

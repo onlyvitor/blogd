@@ -1,6 +1,6 @@
-package com.onlyvitor.blogd.usuario.dto;
+package com.onlyvitor.blogd.user.dto;
 
-import com.onlyvitor.blogd.usuario.domain.Role;
+import com.onlyvitor.blogd.user.domain.Role;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -10,10 +10,10 @@ import lombok.NoArgsConstructor;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class UsuarioResponse {
+public class UserResponse {
 
     private Long id;
-    private String usuario;
+    private String username;
     private String email;
     private Role role;
 }
