@@ -33,5 +33,6 @@ public class UserRequest {
     private String email;
 
     @NotNull(message = "Role is required")
-    private Role role;
+    @Builder.Default
+    private Role role = Role.USUARIO;
 }
