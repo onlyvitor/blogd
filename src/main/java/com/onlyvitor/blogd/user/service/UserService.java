@@ -7,6 +7,7 @@ import com.onlyvitor.blogd.user.exception.UserAlreadyExistsException;
 import com.onlyvitor.blogd.user.exception.UserNotFoundException;
 import com.onlyvitor.blogd.user.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -19,6 +20,7 @@ import java.util.stream.Collectors;
 public class UserService {
 
     private final UserRepository userRepository;
+    private final PasswordEncoder passwordEncoder;
 
     public List<UserResponse> listAll() {
         return userRepository.findAll().stream()
@@ -40,7 +42,7 @@ public class UserService {
 
         User user = User.builder()
                 .username(request.getUsername())
-                .password(request.getPassword())
+                .password(passwordEncoder.encode(request.getPassword()))
                 .email(request.getEmail())
                 .role(request.getRole())
                 .build();
@@ -60,7 +62,7 @@ public class UserService {
         }
 
         user.setUsername(request.getUsername());
-        user.setPassword(request.getPassword());
+        user.setPassword(passwordEncoder.encode(request.getPassword()));
         user.setEmail(request.getEmail());
         user.setRole(request.getRole());
 

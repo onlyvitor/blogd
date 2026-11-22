@@ -22,6 +22,7 @@ public class UserRequest {
     private String username;
 
     @NotBlank(message = "Password is required")
+    @Size(max = 72, message = "Password must be at most 72 characters")
     @Pattern(
         regexp = "^(?=.*[0-9])(?=.*[!@#$%^&*()_+\\-=\\[\\]{};':\"\\\\|,.<>\\/?])(?=.*[A-Z])(?=.*[a-z]).{8,}$",
         message = "Password must be at least 8 characters, including one uppercase letter, one lowercase letter, one number, and one special character"
