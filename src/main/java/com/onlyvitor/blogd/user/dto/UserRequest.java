@@ -3,18 +3,12 @@ package com.onlyvitor.blogd.user.dto;
 import com.onlyvitor.blogd.user.domain.Role;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
-import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Data;
-import lombok.NoArgsConstructor;
+import lombok.*;
 
-@Data
 @Builder
-@NoArgsConstructor
-@AllArgsConstructor
+@Getter
 public class UserRequest {
 
     @NotBlank(message = "Username is required")
@@ -33,7 +27,13 @@ public class UserRequest {
     @Email(message = "Email must be a valid email address")
     private String email;
 
-    @NotNull(message = "Role is required")
     @Builder.Default
     private Role role = Role.USUARIO;
+
+    public UserRequest(String username, String password, String email, Role role) {
+        this.username = username;
+        this.password = password;
+        this.email = email;
+        this.role = role != null ? role : Role.USUARIO;
+    }
 }
