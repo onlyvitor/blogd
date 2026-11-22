@@ -1,5 +1,6 @@
 package com.onlyvitor.blogd.user.service;
 
+import com.onlyvitor.blogd.user.domain.Role;
 import com.onlyvitor.blogd.user.domain.User;
 import com.onlyvitor.blogd.user.dto.UserRequest;
 import com.onlyvitor.blogd.user.dto.UserResponse;
@@ -35,7 +36,7 @@ public class UserService {
     }
 
     @Transactional
-    public UserResponse create(UserRequest request) {
+    public UserResponse create(UserRequest request, boolean isAdmin) {
         if (userRepository.existsByUsername(request.getUsername())) {
             throw new UserAlreadyExistsException(request.getUsername());
         }
@@ -44,7 +45,7 @@ public class UserService {
                 .username(request.getUsername())
                 .password(passwordEncoder.encode(request.getPassword()))
                 .email(request.getEmail())
-                .role(request.getRole())
+                .role(isAdmin ? request.getRole() : Role.USUARIO)
                 .build();
 
         User saved = userRepository.save(user);
@@ -52,7 +53,7 @@ public class UserService {
     }
 
     @Transactional
-    public UserResponse update(Long id, UserRequest request) {
+    public UserResponse update(Long id, UserRequest request, boolean isAdmin) {
         User user = userRepository.findById(id)
                 .orElseThrow(() -> new UserNotFoundException(id));
 
@@ -64,7 +65,9 @@ public class UserService {
         user.setUsername(request.getUsername());
         user.setPassword(passwordEncoder.encode(request.getPassword()));
         user.setEmail(request.getEmail());
-        user.setRole(request.getRole());
+        if (isAdmin) {
+            user.setRole(request.getRole());
+        }
 
         User updated = userRepository.save(user);
         return toResponse(updated);
