@@ -43,7 +43,7 @@ class UserServiceTest {
             return user;
         });
 
-        userService.create(request);
+        userService.create(request, false);
 
         ArgumentCaptor<User> captor = ArgumentCaptor.forClass(User.class);
         verify(userRepository).save(captor.capture());
@@ -55,18 +55,38 @@ class UserServiceTest {
     }
 
     @Test
+    void shouldForceUsuarioRoleWhenNonAdminCreatesUser() {
+        UserRequest request = request(Role.ADMIN);
+        when(userRepository.existsByUsername(request.getUsername())).thenReturn(false);
+        when(userRepository.save(any(User.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+        userService.create(request, false);
+
+        ArgumentCaptor<User> captor = ArgumentCaptor.forClass(User.class);
+        verify(userRepository).save(captor.capture());
+        assertThat(captor.getValue().getRole()).isEqualTo(Role.USUARIO);
+    }
+
+    @Test
+    void shouldAllowAdminRoleWhenAdminCreatesUser() {
+        UserRequest request = request(Role.ADMIN);
+        when(userRepository.existsByUsername(request.getUsername())).thenReturn(false);
+        when(userRepository.save(any(User.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+        userService.create(request, true);
+
+        ArgumentCaptor<User> captor = ArgumentCaptor.forClass(User.class);
+        verify(userRepository).save(captor.capture());
+        assertThat(captor.getValue().getRole()).isEqualTo(Role.ADMIN);
+    }
+
+    @Test
     void shouldRehashPasswordWhenUpdatingUser() {
-        User existing = User.builder()
-                .id(1L)
-                .username("vitor")
-                .password(passwordEncoder.encode("OldPass1!"))
-                .email("vitor@example.com")
-                .role(Role.USUARIO)
-                .build();
+        User existing = existingUser(Role.USUARIO);
         when(userRepository.findById(1L)).thenReturn(Optional.of(existing));
         when(userRepository.save(any(User.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
-        userService.update(1L, request());
+        userService.update(1L, request(), false);
 
         ArgumentCaptor<User> captor = ArgumentCaptor.forClass(User.class);
         verify(userRepository).save(captor.capture());
@@ -77,12 +97,52 @@ class UserServiceTest {
         assertThat(passwordEncoder.matches("OldPass1!", storedPassword)).isFalse();
     }
 
+    @Test
+    void shouldKeepRoleWhenNonAdminUpdatesUser() {
+        User existing = existingUser(Role.USUARIO);
+        when(userRepository.findById(1L)).thenReturn(Optional.of(existing));
+        when(userRepository.save(any(User.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+        userService.update(1L, request(Role.ADMIN), false);
+
+        ArgumentCaptor<User> captor = ArgumentCaptor.forClass(User.class);
+        verify(userRepository).save(captor.capture());
+        assertThat(captor.getValue().getRole()).isEqualTo(Role.USUARIO);
+    }
+
+    @Test
+    void shouldUpdateRoleWhenAdminUpdatesUser() {
+        User existing = existingUser(Role.USUARIO);
+        when(userRepository.findById(1L)).thenReturn(Optional.of(existing));
+        when(userRepository.save(any(User.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+        userService.update(1L, request(Role.ADMIN), true);
+
+        ArgumentCaptor<User> captor = ArgumentCaptor.forClass(User.class);
+        verify(userRepository).save(captor.capture());
+        assertThat(captor.getValue().getRole()).isEqualTo(Role.ADMIN);
+    }
+
+    private User existingUser(Role role) {
+        return User.builder()
+                .id(1L)
+                .username("vitor")
+                .password(passwordEncoder.encode("OldPass1!"))
+                .email("vitor@example.com")
+                .role(role)
+                .build();
+    }
+
     private UserRequest request() {
+        return request(Role.USUARIO);
+    }
+
+    private UserRequest request(Role role) {
         return UserRequest.builder()
                 .username("vitor")
                 .password(RAW_PASSWORD)
                 .email("vitor@example.com")
-                .role(Role.USUARIO)
+                .role(role)
                 .build();
     }
 }
