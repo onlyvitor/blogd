@@ -1,9 +1,9 @@
 package com.onlyvitor.blogd.auth.service;
 
+import com.onlyvitor.blogd.auth.identity.UserAuthenticated;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.GrantedAuthority;
-
 import org.springframework.security.oauth2.jwt.JwtClaimsSet;
 import org.springframework.security.oauth2.jwt.JwtEncoder;
 import org.springframework.security.oauth2.jwt.JwtEncoderParameters;
@@ -31,10 +31,13 @@ public class AuthService {
                 .issuedAt(now)
                 .expiresAt(now.plusSeconds(expiry))
                 .subject(auth.getName())
-                .claim("scopes", scopes)
-                .build();
+                .claim("scopes", scopes);
 
-        return encoder.encode(JwtEncoderParameters.from(claim)).getTokenValue();
+        if (auth.getPrincipal() instanceof UserAuthenticated userAuthenticated) {
+            claim.claim("userId", userAuthenticated.getId());
+        }
+
+        return encoder.encode(JwtEncoderParameters.from(claim.build())).getTokenValue();
     }
 
 
