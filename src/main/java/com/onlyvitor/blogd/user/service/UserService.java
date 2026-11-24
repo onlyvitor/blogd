@@ -1,9 +1,12 @@
 package com.onlyvitor.blogd.user.service;
 
+import com.onlyvitor.blogd.auth.service.RefreshTokenService;
 import com.onlyvitor.blogd.user.domain.Role;
 import com.onlyvitor.blogd.user.domain.User;
+import com.onlyvitor.blogd.user.dto.ChangePasswordRequest;
 import com.onlyvitor.blogd.user.dto.UserRequest;
 import com.onlyvitor.blogd.user.dto.UserResponse;
+import com.onlyvitor.blogd.user.exception.InvalidPasswordException;
 import com.onlyvitor.blogd.user.exception.UserAlreadyExistsException;
 import com.onlyvitor.blogd.user.exception.UserNotFoundException;
 import com.onlyvitor.blogd.user.repository.UserRepository;
@@ -22,6 +25,7 @@ public class UserService {
 
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
+    private final RefreshTokenService refreshTokenService;
 
     public List<UserResponse> listAll() {
         return userRepository.findAll().stream()
@@ -74,10 +78,25 @@ public class UserService {
     }
 
     @Transactional
+    public void changePassword(Long id, ChangePasswordRequest request) {
+        User user = userRepository.findById(id)
+                .orElseThrow(() -> new UserNotFoundException(id));
+
+        if (!passwordEncoder.matches(request.currentPassword(), user.getPassword())) {
+            throw new InvalidPasswordException();
+        }
+
+        user.setPassword(passwordEncoder.encode(request.newPassword()));
+        userRepository.save(user);
+        refreshTokenService.revokeAllForUser(id);
+    }
+
+    @Transactional
     public void delete(Long id) {
         if (!userRepository.existsById(id)) {
             throw new UserNotFoundException(id);
         }
+        refreshTokenService.revokeAllForUser(id);
         userRepository.deleteById(id);
     }
 

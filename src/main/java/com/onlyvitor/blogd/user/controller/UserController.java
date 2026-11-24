@@ -1,5 +1,6 @@
 package com.onlyvitor.blogd.user.controller;
 
+import com.onlyvitor.blogd.user.dto.ChangePasswordRequest;
 import com.onlyvitor.blogd.user.dto.UserRequest;
 import com.onlyvitor.blogd.user.dto.UserResponse;
 import com.onlyvitor.blogd.user.security.UserSecurity;
@@ -59,6 +60,16 @@ public class UserController {
             Authentication authentication) {
         boolean admin = userSecurity.isAdmin(authentication);
         return ResponseEntity.ok(userService.update(id, request, admin));
+    }
+
+    @PutMapping("/{id}/password")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    @PreAuthorize("@userSecurity.isSelf(authentication, #id)")
+    public ResponseEntity<Void> changePassword(
+            @PathVariable Long id,
+            @Valid @RequestBody ChangePasswordRequest request) {
+        userService.changePassword(id, request);
+        return ResponseEntity.noContent().build();
     }
 
     @DeleteMapping("/{id}")
