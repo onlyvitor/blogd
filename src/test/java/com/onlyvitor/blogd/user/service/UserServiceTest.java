@@ -45,11 +45,7 @@ class UserServiceTest {
     void shouldStorePasswordAsBcryptHashWhenCreatingUser() {
         UserRequest request = request();
         when(userRepository.existsByUsername(request.username())).thenReturn(false);
-        when(userRepository.save(any(User.class))).thenAnswer(invocation -> {
-            User user = invocation.getArgument(0);
-            user.setId(1L);
-            return user;
-        });
+        when(userRepository.save(any(User.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
         userService.create(request, false);
 

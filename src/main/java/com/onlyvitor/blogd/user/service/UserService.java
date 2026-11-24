@@ -75,7 +75,7 @@ public class UserService {
             throw new InvalidPasswordException();
         }
 
-        user.setPassword(passwordEncoder.encode(request.newPassword()));
+        user.changePassword(passwordEncoder.encode(request.newPassword()));
         userRepository.save(user);
         refreshTokenService.revokeAllForUser(id);
     }
