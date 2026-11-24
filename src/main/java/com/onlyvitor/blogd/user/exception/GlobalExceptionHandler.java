@@ -2,6 +2,8 @@ package com.onlyvitor.blogd.user.exception;
 
 import com.onlyvitor.blogd.auth.exception.InvalidCredentialsException;
 import com.onlyvitor.blogd.auth.exception.InvalidRefreshTokenException;
+import com.onlyvitor.blogd.post.exception.InvalidRelatedPostException;
+import com.onlyvitor.blogd.post.exception.PostNotFoundException;
 import jakarta.validation.ConstraintViolationException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -27,6 +29,20 @@ public class GlobalExceptionHandler {
         Map<String, String> error = new HashMap<>();
         error.put("error", ex.getMessage());
         return ResponseEntity.status(HttpStatus.CONFLICT).body(error);
+    }
+
+    @ExceptionHandler(PostNotFoundException.class)
+    public ResponseEntity<Map<String, String>> handlePostNotFound(PostNotFoundException ex) {
+        Map<String, String> error = new HashMap<>();
+        error.put("error", ex.getMessage());
+        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(error);
+    }
+
+    @ExceptionHandler(InvalidRelatedPostException.class)
+    public ResponseEntity<Map<String, String>> handleInvalidRelatedPost(InvalidRelatedPostException ex) {
+        Map<String, String> error = new HashMap<>();
+        error.put("error", ex.getMessage());
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(error);
     }
 
     @ExceptionHandler(InvalidCredentialsException.class)
