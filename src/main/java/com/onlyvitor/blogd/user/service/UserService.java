@@ -29,14 +29,14 @@ public class UserService {
 
     public List<UserResponse> listAll() {
         return userRepository.findAll().stream()
-                .map(this::toResponse)
+                .map(UserResponse::from)
                 .collect(Collectors.toList());
     }
 
     public UserResponse findById(Long id) {
         User user = userRepository.findById(id)
                 .orElseThrow(() -> new UserNotFoundException(id));
-        return toResponse(user);
+        return UserResponse.from(user);
     }
 
     @Transactional
@@ -53,7 +53,7 @@ public class UserService {
                 .build();
 
         User saved = userRepository.save(user);
-        return toResponse(saved);
+        return UserResponse.from(saved);
     }
 
     @Transactional
@@ -74,7 +74,7 @@ public class UserService {
         }
 
         User updated = userRepository.save(user);
-        return toResponse(updated);
+        return UserResponse.from(updated);
     }
 
     @Transactional
@@ -98,14 +98,5 @@ public class UserService {
         }
         refreshTokenService.revokeAllForUser(id);
         userRepository.deleteById(id);
-    }
-
-    private UserResponse toResponse(User user) {
-        return UserResponse.builder()
-                .id(user.getId())
-                .username(user.getUsername())
-                .email(user.getEmail())
-                .role(user.getRole())
-                .build();
     }
 }

@@ -55,12 +55,7 @@ public class AuthService {
         String accessToken = generateAccessToken(principal);
         String refreshToken = refreshTokenService.create(principal.getId());
 
-        UserResponse user = UserResponse.builder()
-                .id(principal.getId())
-                .username(principal.getUsername())
-                .email(principal.getEmail())
-                .role(principal.getRole())
-                .build();
+        UserResponse user = UserResponse.from(principal);
 
         return new TokenResponse(accessToken, refreshToken, "Bearer", accessTokenExpirySeconds, user);
     }
