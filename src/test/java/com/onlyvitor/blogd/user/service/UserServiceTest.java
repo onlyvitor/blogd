@@ -89,6 +89,19 @@ class UserServiceTest {
     }
 
     @Test
+    void shouldStoreUsuarioRoleWhenAdminOmitsRole() {
+        UserRequest request = new UserRequest("vitor", RAW_PASSWORD, "vitor@example.com", null);
+        when(userRepository.existsByUsername(request.username())).thenReturn(false);
+        when(userRepository.save(any(User.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+        userService.create(request, true);
+
+        ArgumentCaptor<User> captor = ArgumentCaptor.forClass(User.class);
+        verify(userRepository).save(captor.capture());
+        assertThat(captor.getValue().getRole()).isEqualTo(Role.USUARIO);
+    }
+
+    @Test
     void shouldRehashPasswordWhenUpdatingUser() {
         User existing = existingUser(Role.USUARIO);
         when(userRepository.findById(1L)).thenReturn(Optional.of(existing));
@@ -103,6 +116,20 @@ class UserServiceTest {
         assertThat(storedPassword).startsWith("$2");
         assertThat(passwordEncoder.matches(RAW_PASSWORD, storedPassword)).isTrue();
         assertThat(passwordEncoder.matches(OLD_PASSWORD, storedPassword)).isFalse();
+    }
+
+    @Test
+    void shouldReplaceUsernameAndEmailWhenUpdatingUser() {
+        User existing = existingUser(Role.USUARIO);
+        when(userRepository.findById(1L)).thenReturn(Optional.of(existing));
+        when(userRepository.save(any(User.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+        userService.update(1L, new UserRequest("novo", RAW_PASSWORD, "novo@example.com", Role.USUARIO), false);
+
+        ArgumentCaptor<User> captor = ArgumentCaptor.forClass(User.class);
+        verify(userRepository).save(captor.capture());
+        assertThat(captor.getValue().getUsername()).isEqualTo("novo");
+        assertThat(captor.getValue().getEmail()).isEqualTo("novo@example.com");
     }
 
     @Test
