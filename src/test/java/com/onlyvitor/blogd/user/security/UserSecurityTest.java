@@ -30,7 +30,8 @@ class UserSecurityTest {
     @Test
     void shouldMatchJwtByUserIdClaim() {
         Jwt jwt = Jwt.withTokenValue("token")
-                .header("alg", "none")
+                .header("alg", "RS256")
+                .header("typ", "JWT")
                 .subject("vitor")
                 .claim("userId", 1L)
                 .build();

@@ -3,6 +3,7 @@ package com.onlyvitor.blogd.auth;
 import tools.jackson.databind.JsonNode;
 import tools.jackson.databind.ObjectMapper;
 import com.onlyvitor.blogd.user.repository.UserRepository;
+import com.onlyvitor.blogd.user.service.UserService;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -42,12 +43,15 @@ class AuthFlowIntegrationTest {
     @Autowired
     private UserRepository userRepository;
 
+    @Autowired
+    private UserService userService;
+
     private final List<String> createdUsernames = new ArrayList<>();
 
     @AfterEach
     void cleanUp() {
         createdUsernames.forEach(username ->
-                userRepository.findByUsername(username).ifPresent(userRepository::delete));
+                userRepository.findByUsername(username).ifPresent(user -> userService.delete(user.getId())));
     }
 
     @Test
@@ -109,7 +113,7 @@ class AuthFlowIntegrationTest {
                                 "newPassword", NEW_PASSWORD))))
                 .andExpect(status().isNoContent());
 
-        mockMvc.perform(post("/api/auth").with(httpBasic(username, PASSWORD)))
+        mockMvc.perform(post("/api/auth/login").with(httpBasic(username, PASSWORD)))
                 .andExpect(status().isUnauthorized());
         login(username, NEW_PASSWORD);
 
@@ -178,7 +182,7 @@ class AuthFlowIntegrationTest {
     }
 
     private JsonNode login(String username, String password) throws Exception {
-        MvcResult result = mockMvc.perform(post("/api/auth").with(httpBasic(username, password)))
+        MvcResult result = mockMvc.perform(post("/api/auth/login").with(httpBasic(username, password)))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.accessToken").isNotEmpty())
                 .andExpect(jsonPath("$.refreshToken").isNotEmpty())
