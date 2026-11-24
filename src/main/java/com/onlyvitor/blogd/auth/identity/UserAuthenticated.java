@@ -1,5 +1,6 @@
 package com.onlyvitor.blogd.auth.identity;
 
+import com.onlyvitor.blogd.user.domain.Role;
 import com.onlyvitor.blogd.user.domain.User;
 import lombok.RequiredArgsConstructor;
 import org.jspecify.annotations.Nullable;
@@ -22,6 +23,14 @@ public class UserAuthenticated implements UserDetails {
 
     public Long getId() {
         return user.getId();
+    }
+
+    public String getEmail() {
+        return user.getEmail();
+    }
+
+    public Role getRole() {
+        return user.getRole();
     }
 
     @Override
