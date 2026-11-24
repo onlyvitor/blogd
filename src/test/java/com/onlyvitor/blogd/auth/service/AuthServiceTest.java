@@ -75,10 +75,10 @@ class AuthServiceTest {
         assertThat(response.refreshToken()).isEqualTo("refresh-token");
         assertThat(response.tokenType()).isEqualTo("Bearer");
         assertThat(response.expiresIn()).isEqualTo(ACCESS_TOKEN_EXPIRY_SECONDS);
-        assertThat(response.user().getId()).isEqualTo(1L);
-        assertThat(response.user().getUsername()).isEqualTo("vitor");
-        assertThat(response.user().getEmail()).isEqualTo("vitor@example.com");
-        assertThat(response.user().getRole()).isEqualTo(Role.ADMIN);
+        assertThat(response.user().id()).isEqualTo(1L);
+        assertThat(response.user().username()).isEqualTo("vitor");
+        assertThat(response.user().email()).isEqualTo("vitor@example.com");
+        assertThat(response.user().role()).isEqualTo(Role.ADMIN);
 
         Jwt jwt = jwtDecoder.decode(response.accessToken());
         assertThat(jwt.getSubject()).isEqualTo("vitor");
@@ -112,7 +112,7 @@ class AuthServiceTest {
         assertThat(response).isPresent();
         assertThat(response.get().accessToken()).isNotBlank();
         assertThat(response.get().refreshToken()).isEqualTo("new-refresh-token");
-        assertThat(response.get().user().getUsername()).isEqualTo("vitor");
+        assertThat(response.get().user().username()).isEqualTo("vitor");
     }
 
     @Test
