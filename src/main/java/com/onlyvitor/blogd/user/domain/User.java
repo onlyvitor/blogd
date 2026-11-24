@@ -1,5 +1,6 @@
 package com.onlyvitor.blogd.user.domain;
 
+import com.onlyvitor.blogd.user.dto.UserRequest;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
@@ -37,4 +38,22 @@ public class User {
     @Column(nullable = false, length = 20)
     @Enumerated(EnumType.STRING)
     private Role role;
+
+    public static User from(UserRequest request, String encodedPassword, boolean isAdmin) {
+        return User.builder()
+                .username(request.username())
+                .password(encodedPassword)
+                .email(request.email())
+                .role(isAdmin ? request.role() : Role.USUARIO)
+                .build();
+    }
+
+    public void update(UserRequest request, String encodedPassword, boolean isAdmin) {
+        this.username = request.username();
+        this.password = encodedPassword;
+        this.email = request.email();
+        if (isAdmin) {
+            this.role = request.role();
+        }
+    }
 }

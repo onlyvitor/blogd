@@ -44,7 +44,7 @@ class UserServiceTest {
     @Test
     void shouldStorePasswordAsBcryptHashWhenCreatingUser() {
         UserRequest request = request();
-        when(userRepository.existsByUsername(request.getUsername())).thenReturn(false);
+        when(userRepository.existsByUsername(request.username())).thenReturn(false);
         when(userRepository.save(any(User.class))).thenAnswer(invocation -> {
             User user = invocation.getArgument(0);
             user.setId(1L);
@@ -65,7 +65,7 @@ class UserServiceTest {
     @Test
     void shouldForceUsuarioRoleWhenNonAdminCreatesUser() {
         UserRequest request = request(Role.ADMIN);
-        when(userRepository.existsByUsername(request.getUsername())).thenReturn(false);
+        when(userRepository.existsByUsername(request.username())).thenReturn(false);
         when(userRepository.save(any(User.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
         userService.create(request, false);
@@ -78,7 +78,7 @@ class UserServiceTest {
     @Test
     void shouldAllowAdminRoleWhenAdminCreatesUser() {
         UserRequest request = request(Role.ADMIN);
-        when(userRepository.existsByUsername(request.getUsername())).thenReturn(false);
+        when(userRepository.existsByUsername(request.username())).thenReturn(false);
         when(userRepository.save(any(User.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
         userService.create(request, true);
@@ -186,11 +186,6 @@ class UserServiceTest {
     }
 
     private UserRequest request(Role role) {
-        return UserRequest.builder()
-                .username("vitor")
-                .password(RAW_PASSWORD)
-                .email("vitor@example.com")
-                .role(role)
-                .build();
+        return new UserRequest("vitor", RAW_PASSWORD, "vitor@example.com", role);
     }
 }

@@ -1,7 +1,6 @@
 package com.onlyvitor.blogd.user.service;
 
 import com.onlyvitor.blogd.auth.service.RefreshTokenService;
-import com.onlyvitor.blogd.user.domain.Role;
 import com.onlyvitor.blogd.user.domain.User;
 import com.onlyvitor.blogd.user.dto.ChangePasswordRequest;
 import com.onlyvitor.blogd.user.dto.UserRequest;
@@ -41,16 +40,11 @@ public class UserService {
 
     @Transactional
     public UserResponse create(UserRequest request, boolean isAdmin) {
-        if (userRepository.existsByUsername(request.getUsername())) {
-            throw new UserAlreadyExistsException(request.getUsername());
+        if (userRepository.existsByUsername(request.username())) {
+            throw new UserAlreadyExistsException(request.username());
         }
 
-        User user = User.builder()
-                .username(request.getUsername())
-                .password(passwordEncoder.encode(request.getPassword()))
-                .email(request.getEmail())
-                .role(isAdmin ? request.getRole() : Role.USUARIO)
-                .build();
+        User user = User.from(request, passwordEncoder.encode(request.password()), isAdmin);
 
         User saved = userRepository.save(user);
         return UserResponse.from(saved);
@@ -61,17 +55,12 @@ public class UserService {
         User user = userRepository.findById(id)
                 .orElseThrow(() -> new UserNotFoundException(id));
 
-        if (!user.getUsername().equals(request.getUsername())
-                && userRepository.existsByUsername(request.getUsername())) {
-            throw new UserAlreadyExistsException(request.getUsername());
+        if (!user.getUsername().equals(request.username())
+                && userRepository.existsByUsername(request.username())) {
+            throw new UserAlreadyExistsException(request.username());
         }
 
-        user.setUsername(request.getUsername());
-        user.setPassword(passwordEncoder.encode(request.getPassword()));
-        user.setEmail(request.getEmail());
-        if (isAdmin) {
-            user.setRole(request.getRole());
-        }
+        user.update(request, passwordEncoder.encode(request.password()), isAdmin);
 
         User updated = userRepository.save(user);
         return UserResponse.from(updated);

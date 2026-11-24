@@ -322,12 +322,8 @@ class PostFlowIntegrationTest {
         String username = uniqueUsername(prefix);
         createdUsernames.add(username);
 
-        long id = userService.create(UserRequest.builder()
-                .username(username)
-                .password(PASSWORD)
-                .email(username + "@example.com")
-                .role(Role.ADMIN)
-                .build(), true).id();
+        long id = userService.create(
+                new UserRequest(username, PASSWORD, username + "@example.com", Role.ADMIN), true).id();
 
         return new Account(id, username, login(username));
     }
