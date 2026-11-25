@@ -1,6 +1,7 @@
 package com.onlyvitor.blogd.user.service;
 
 import com.onlyvitor.blogd.auth.service.RefreshTokenService;
+import com.onlyvitor.blogd.post.service.PostService;
 import com.onlyvitor.blogd.user.domain.Role;
 import com.onlyvitor.blogd.user.domain.User;
 import com.onlyvitor.blogd.user.dto.ChangePasswordRequest;
@@ -31,6 +32,7 @@ class UserServiceTest {
     private UserRepository userRepository;
     private PasswordEncoder passwordEncoder;
     private RefreshTokenService refreshTokenService;
+    private PostService postService;
     private UserService userService;
 
     @BeforeEach
@@ -38,7 +40,8 @@ class UserServiceTest {
         userRepository = mock(UserRepository.class);
         passwordEncoder = new BCryptPasswordEncoder();
         refreshTokenService = mock(RefreshTokenService.class);
-        userService = new UserService(userRepository, passwordEncoder, refreshTokenService);
+        postService = mock(PostService.class);
+        userService = new UserService(userRepository, passwordEncoder, refreshTokenService, postService);
     }
 
     @Test
@@ -191,6 +194,7 @@ class UserServiceTest {
         userService.delete(1L);
 
         verify(refreshTokenService).revokeAllForUser(1L);
+        verify(postService).handleAuthorDeletion(1L);
         verify(userRepository).deleteById(1L);
     }
 

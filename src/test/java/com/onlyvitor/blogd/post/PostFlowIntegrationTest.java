@@ -66,7 +66,7 @@ class PostFlowIntegrationTest {
     }
 
     @Test
-    void shouldCreateReadUpdateAndDeletePostsWithAuthorsRelationsAndAttachments() throws Exception {
+    void shouldCreateReadUpdateAndDeletePostsWithAuthorCoauthorsRelationsAndAttachments() throws Exception {
         Account alice = account("alice");
         Account bob = account("bob");
         Account carol = account("carol");
@@ -74,16 +74,19 @@ class PostFlowIntegrationTest {
         JsonNode first = createPost(alice, Map.of(
                 "title", "Primeiro post",
                 "content", "# Olá\n\nTexto em **markdown**",
-                "authorIds", List.of(alice.id()),
+                "authorId", alice.id(),
                 "attachments", List.of(
                         Map.of("type", "IMAGE", "url", "https://example.com/cover.png", "name", "Capa"),
                         Map.of("type", "FILE", "url", "https://example.com/doc.pdf"))));
         long firstId = first.get("id").asLong();
 
         assertThat(first.get("format").asText()).isEqualTo("MARKDOWN");
+        assertThat(first.get("visibility").asText()).isEqualTo("PUBLIC");
+        assertThat(first.get("key").isNull()).isTrue();
         assertThat(first.get("createdAt").asText()).isNotBlank();
-        assertThat(first.get("authors").size()).isEqualTo(1);
-        assertThat(first.get("authors").get(0).get("username").asText()).isEqualTo(alice.username());
+        assertThat(first.get("author").get("username").asText()).isEqualTo(alice.username());
+        assertThat(first.get("coauthors").size()).isZero();
+        assertThat(first.get("deletable").asBoolean()).isFalse();
         assertThat(first.get("relatedPosts").size()).isZero();
         assertThat(first.get("attachments").size()).isEqualTo(2);
         assertThat(first.get("attachments").get(0).get("type").asText()).isEqualTo("IMAGE");
@@ -92,13 +95,16 @@ class PostFlowIntegrationTest {
                 "title", "Segundo post",
                 "content", "Título\n======\n\nTexto em reStructuredText",
                 "format", "RST",
-                "authorIds", List.of(alice.id(), bob.id()),
+                "authorId", bob.id(),
+                "coauthorIds", List.of(alice.id()),
                 "relatedPostIds", List.of(firstId),
                 "attachments", List.of(Map.of("type", "VIDEO", "url", "https://example.com/video.mp4"))));
         long secondId = second.get("id").asLong();
 
         assertThat(second.get("format").asText()).isEqualTo("RST");
-        assertThat(second.get("authors").size()).isEqualTo(2);
+        assertThat(second.get("author").get("id").asLong()).isEqualTo(bob.id());
+        assertThat(second.get("coauthors").size()).isEqualTo(1);
+        assertThat(second.get("coauthors").get(0).get("id").asLong()).isEqualTo(alice.id());
         assertThat(second.get("relatedPosts").size()).isEqualTo(1);
         assertThat(second.get("relatedPosts").get(0).get("id").asLong()).isEqualTo(firstId);
         assertThat(second.get("relatedPosts").get(0).get("title").asText()).isEqualTo("Primeiro post");
@@ -109,7 +115,7 @@ class PostFlowIntegrationTest {
                         .content(json(Map.of(
                                 "title", "Sem permissão",
                                 "content", "Conteúdo",
-                                "authorIds", List.of(alice.id())))))
+                                "authorId", alice.id()))))
                 .andExpect(status().isForbidden());
 
         assertThat(ids(mockMvc.perform(get("/api/posts").header("Authorization", bearer(alice)))
@@ -131,7 +137,8 @@ class PostFlowIntegrationTest {
                                 "title", "Primeiro post revisado",
                                 "content", "Conteúdo revisado",
                                 "format", "RST",
-                                "authorIds", List.of(alice.id(), bob.id()),
+                                "authorId", alice.id(),
+                                "coauthorIds", List.of(bob.id()),
                                 "relatedPostIds", List.of(secondId),
                                 "attachments", List.of(Map.of("type", "IMAGE", "url", "https://example.com/new-cover.png"))))))
                 .andExpect(status().isOk())
@@ -139,7 +146,8 @@ class PostFlowIntegrationTest {
 
         assertThat(firstUpdated.get("title").asText()).isEqualTo("Primeiro post revisado");
         assertThat(firstUpdated.get("format").asText()).isEqualTo("RST");
-        assertThat(firstUpdated.get("authors").size()).isEqualTo(2);
+        assertThat(firstUpdated.get("author").get("id").asLong()).isEqualTo(alice.id());
+        assertThat(firstUpdated.get("coauthors").get(0).get("id").asLong()).isEqualTo(bob.id());
         assertThat(firstUpdated.get("relatedPosts").get(0).get("id").asLong()).isEqualTo(secondId);
         assertThat(firstUpdated.get("attachments").size()).isEqualTo(1);
         assertThat(firstUpdated.get("attachments").get(0).get("url").asText())
@@ -151,7 +159,7 @@ class PostFlowIntegrationTest {
                         .content(json(Map.of(
                                 "title", "Invasão",
                                 "content", "Conteúdo",
-                                "authorIds", List.of(carol.id())))))
+                                "authorId", carol.id()))))
                 .andExpect(status().isForbidden());
 
         mockMvc.perform(put("/api/posts/{id}", firstId)
@@ -160,11 +168,42 @@ class PostFlowIntegrationTest {
                         .content(json(Map.of(
                                 "title", "Removendo a mim mesmo",
                                 "content", "Conteúdo",
-                                "authorIds", List.of(alice.id())))))
+                                "authorId", alice.id()))))
                 .andExpect(status().isForbidden());
+
+        mockMvc.perform(put("/api/posts/{id}", firstId)
+                        .header("Authorization", bearer(bob))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(json(Map.of(
+                                "title", "Coautor trocando autores",
+                                "content", "Conteúdo",
+                                "authorId", alice.id(),
+                                "coauthorIds", List.of(bob.id(), carol.id())))))
+                .andExpect(status().isForbidden());
+
+        JsonNode updatedByCoauthor = read(mockMvc.perform(put("/api/posts/{id}", firstId)
+                        .header("Authorization", bearer(bob))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(json(Map.of(
+                                "title", "Revisado pelo coautor",
+                                "content", "Conteúdo",
+                                "authorId", alice.id(),
+                                "coauthorIds", List.of(bob.id())))))
+                .andExpect(status().isOk())
+                .andReturn());
+
+        assertThat(updatedByCoauthor.get("title").asText()).isEqualTo("Revisado pelo coautor");
 
         mockMvc.perform(delete("/api/posts/{id}", firstId).header("Authorization", bearer(carol)))
                 .andExpect(status().isForbidden());
+
+        mockMvc.perform(delete("/api/posts/{id}", firstId).header("Authorization", bearer(alice)))
+                .andExpect(status().isConflict())
+                .andExpect(jsonPath("$.error").exists());
+
+        JsonNode accepted = acceptDeletion(alice, firstId);
+        assertThat(accepted.get("deletionAcceptances").size()).isEqualTo(1);
+        assertThat(accepted.get("deletable").asBoolean()).isTrue();
 
         mockMvc.perform(delete("/api/posts/{id}", firstId).header("Authorization", bearer(alice)))
                 .andExpect(status().isNoContent());
@@ -181,8 +220,205 @@ class PostFlowIntegrationTest {
     }
 
     @Test
+    void shouldDeletePostOnlyWhenMajorityOfAuthorsAccept() throws Exception {
+        Account alice = account("alice");
+        Account bob = account("bob");
+        Account carol = account("carol");
+
+        long postId = createPost(alice, Map.of(
+                "title", "Votação",
+                "content", "Conteúdo",
+                "authorId", alice.id(),
+                "coauthorIds", List.of(bob.id(), carol.id()))).get("id").asLong();
+
+        mockMvc.perform(delete("/api/posts/{id}", postId).header("Authorization", bearer(alice)))
+                .andExpect(status().isConflict());
+
+        assertThat(acceptDeletion(alice, postId).get("deletable").asBoolean()).isFalse();
+
+        JsonNode bobAccepted = acceptDeletion(bob, postId);
+        assertThat(bobAccepted.get("deletable").asBoolean()).isTrue();
+        assertThat(bobAccepted.get("deletionAcceptances").size()).isEqualTo(2);
+
+        mockMvc.perform(delete("/api/posts/{id}", postId).header("Authorization", bearer(carol)))
+                .andExpect(status().isNoContent());
+    }
+
+    @Test
+    void shouldLetMainAuthorDecideTiesAndAllowWithdrawingAcceptance() throws Exception {
+        Account alice = account("alice");
+        Account bob = account("bob");
+
+        long postId = createPost(alice, Map.of(
+                "title", "Empate",
+                "content", "Conteúdo",
+                "authorId", alice.id(),
+                "coauthorIds", List.of(bob.id()))).get("id").asLong();
+
+        assertThat(acceptDeletion(bob, postId).get("deletable").asBoolean()).isFalse();
+
+        mockMvc.perform(delete("/api/posts/{id}", postId).header("Authorization", bearer(bob)))
+                .andExpect(status().isConflict());
+
+        JsonNode withdrawn = read(mockMvc.perform(delete("/api/posts/{id}/deletion-acceptance", postId)
+                        .header("Authorization", bearer(bob)))
+                .andExpect(status().isOk())
+                .andReturn());
+
+        assertThat(withdrawn.get("deletionAcceptances").size()).isZero();
+
+        assertThat(acceptDeletion(alice, postId).get("deletable").asBoolean()).isTrue();
+
+        mockMvc.perform(delete("/api/posts/{id}", postId).header("Authorization", bearer(bob)))
+                .andExpect(status().isNoContent());
+    }
+
+    @Test
+    void shouldShowPrivatePostsOnlyToAuthorsAndKeyHolders() throws Exception {
+        Account alice = account("alice");
+        Account bob = account("bob");
+        Account carol = account("carol");
+
+        JsonNode created = createPost(alice, Map.of(
+                "title", "Segredo",
+                "content", "Conteúdo privado",
+                "visibility", "PRIVATE",
+                "authorId", alice.id(),
+                "coauthorIds", List.of(bob.id())));
+        long postId = created.get("id").asLong();
+        String key = created.get("key").asText();
+
+        assertThat(created.get("visibility").asText()).isEqualTo("PRIVATE");
+        assertThat(key).isNotBlank();
+
+        mockMvc.perform(get("/api/posts/{id}", postId).header("Authorization", bearer(carol)))
+                .andExpect(status().isNotFound());
+
+        mockMvc.perform(get("/api/posts/{id}", postId)
+                        .header("Authorization", bearer(carol))
+                        .header("X-Post-Key", "chave-errada"))
+                .andExpect(status().isNotFound());
+
+        JsonNode byKey = read(mockMvc.perform(get("/api/posts/{id}", postId)
+                        .header("Authorization", bearer(carol))
+                        .header("X-Post-Key", key))
+                .andExpect(status().isOk())
+                .andReturn());
+
+        assertThat(byKey.get("title").asText()).isEqualTo("Segredo");
+        assertThat(byKey.get("key").isNull()).isTrue();
+
+        JsonNode byCoauthor = read(mockMvc.perform(get("/api/posts/{id}", postId)
+                        .header("Authorization", bearer(bob)))
+                .andExpect(status().isOk())
+                .andReturn());
+
+        assertThat(byCoauthor.get("key").asText()).isEqualTo(key);
+
+        assertThat(ids(mockMvc.perform(get("/api/posts").header("Authorization", bearer(carol)))
+                .andExpect(status().isOk())
+                .andReturn())).doesNotContain(postId);
+        assertThat(ids(mockMvc.perform(get("/api/posts").header("Authorization", bearer(bob)))
+                .andExpect(status().isOk())
+                .andReturn())).contains(postId);
+    }
+
+    @Test
+    void shouldNotExposePrivateRelatedPostsToOtherUsers() throws Exception {
+        Account alice = account("alice");
+        Account carol = account("carol");
+
+        long privateId = createPost(alice, Map.of(
+                "title", "Privado",
+                "content", "Conteúdo",
+                "visibility", "PRIVATE",
+                "authorId", alice.id())).get("id").asLong();
+
+        mockMvc.perform(post("/api/posts")
+                        .header("Authorization", bearer(carol))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(json(Map.of(
+                                "title", "Tentando relacionar",
+                                "content", "Conteúdo",
+                                "authorId", carol.id(),
+                                "relatedPostIds", List.of(privateId)))))
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.error").value("Post not found with id: " + privateId));
+
+        long publicId = createPost(alice, Map.of(
+                "title", "Público",
+                "content", "Conteúdo",
+                "authorId", alice.id(),
+                "relatedPostIds", List.of(privateId))).get("id").asLong();
+
+        JsonNode forCarol = read(mockMvc.perform(get("/api/posts/{id}", publicId)
+                        .header("Authorization", bearer(carol)))
+                .andExpect(status().isOk())
+                .andReturn());
+
+        assertThat(forCarol.get("relatedPosts").size()).isZero();
+
+        JsonNode forAlice = read(mockMvc.perform(get("/api/posts/{id}", publicId)
+                        .header("Authorization", bearer(alice)))
+                .andExpect(status().isOk())
+                .andReturn());
+
+        assertThat(forAlice.get("relatedPosts").get(0).get("id").asLong()).isEqualTo(privateId);
+    }
+
+    @Test
+    void shouldKeepPostsWhenCoauthorIsDeleted() throws Exception {
+        Account alice = account("alice");
+        Account dave = account("dave");
+
+        long postId = createPost(alice, Map.of(
+                "title", "Coautoria",
+                "content", "Conteúdo",
+                "authorId", alice.id(),
+                "coauthorIds", List.of(dave.id()))).get("id").asLong();
+
+        userService.delete(dave.id());
+
+        JsonNode found = read(mockMvc.perform(get("/api/posts/{id}", postId).header("Authorization", bearer(alice)))
+                .andExpect(status().isOk())
+                .andReturn());
+
+        assertThat(found.get("author").get("id").asLong()).isEqualTo(alice.id());
+        assertThat(found.get("coauthors").size()).isZero();
+    }
+
+    @Test
+    void shouldPassMainAuthorshipToCoauthorWhenMainAuthorIsDeleted() throws Exception {
+        Account alice = account("alice");
+        Account bob = account("bob");
+
+        long sharedId = createPost(alice, Map.of(
+                "title", "Compartilhado",
+                "content", "Conteúdo",
+                "authorId", alice.id(),
+                "coauthorIds", List.of(bob.id()))).get("id").asLong();
+        long soloId = createPost(alice, Map.of(
+                "title", "Sozinho",
+                "content", "Conteúdo",
+                "authorId", alice.id())).get("id").asLong();
+
+        userService.delete(alice.id());
+
+        JsonNode shared = read(mockMvc.perform(get("/api/posts/{id}", sharedId).header("Authorization", bearer(bob)))
+                .andExpect(status().isOk())
+                .andReturn());
+
+        assertThat(shared.get("author").get("id").asLong()).isEqualTo(bob.id());
+        assertThat(shared.get("coauthors").size()).isZero();
+
+        mockMvc.perform(get("/api/posts/{id}", soloId).header("Authorization", bearer(bob)))
+                .andExpect(status().isNotFound());
+    }
+
+    @Test
     void shouldRejectInvalidPostPayloads() throws Exception {
         Account alice = account("alice");
+        Account bob = account("bob");
 
         mockMvc.perform(post("/api/posts")
                         .header("Authorization", bearer(alice))
@@ -190,7 +426,7 @@ class PostFlowIntegrationTest {
                         .content(json(Map.of(
                                 "title", " ",
                                 "content", "Conteúdo",
-                                "authorIds", List.of(alice.id())))))
+                                "authorId", alice.id()))))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.title").value("Title is required"));
 
@@ -199,10 +435,9 @@ class PostFlowIntegrationTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(json(Map.of(
                                 "title", "Título",
-                                "content", "Conteúdo",
-                                "authorIds", List.of()))))
+                                "content", "Conteúdo"))))
                 .andExpect(status().isBadRequest())
-                .andExpect(jsonPath("$.authorIds").value("At least one author is required"));
+                .andExpect(jsonPath("$.authorId").value("Author id is required"));
 
         mockMvc.perform(post("/api/posts")
                         .header("Authorization", bearer(alice))
@@ -210,7 +445,7 @@ class PostFlowIntegrationTest {
                         .content(json(Map.of(
                                 "title", "Título",
                                 "content", "Conteúdo",
-                                "authorIds", List.of(alice.id()),
+                                "authorId", alice.id(),
                                 "attachments", List.of(Map.of("type", "FILE", "url", "javascript:alert(1)"))))))
                 .andExpect(status().isBadRequest());
 
@@ -220,15 +455,24 @@ class PostFlowIntegrationTest {
                         .content(json(Map.of(
                                 "title", "Título",
                                 "content", "Conteúdo",
-                                "authorIds", List.of(alice.id(), -1L)))))
+                                "authorId", alice.id(),
+                                "coauthorIds", List.of(-1L)))))
                 .andExpect(status().isNotFound())
                 .andExpect(jsonPath("$.error").value("User not found with id: -1"));
 
-        JsonNode created = createPost(alice, Map.of(
+        mockMvc.perform(post("/api/posts")
+                        .header("Authorization", bearer(alice))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(json(Map.of(
+                                "title", "Título",
+                                "content", "Conteúdo",
+                                "authorId", bob.id()))))
+                .andExpect(status().isForbidden());
+
+        long postId = createPost(alice, Map.of(
                 "title", "Post",
                 "content", "Conteúdo",
-                "authorIds", List.of(alice.id())));
-        long postId = created.get("id").asLong();
+                "authorId", alice.id())).get("id").asLong();
 
         mockMvc.perform(put("/api/posts/{id}", postId)
                         .header("Authorization", bearer(alice))
@@ -236,7 +480,7 @@ class PostFlowIntegrationTest {
                         .content(json(Map.of(
                                 "title", "Post",
                                 "content", "Conteúdo",
-                                "authorIds", List.of(alice.id()),
+                                "authorId", alice.id(),
                                 "relatedPostIds", List.of(postId)))))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.error").value("A post cannot be related to itself"));
@@ -247,58 +491,37 @@ class PostFlowIntegrationTest {
                         .content(json(Map.of(
                                 "title", "Post",
                                 "content", "Conteúdo",
-                                "authorIds", List.of(alice.id()),
+                                "authorId", alice.id(),
                                 "relatedPostIds", List.of(-1L)))))
                 .andExpect(status().isNotFound())
                 .andExpect(jsonPath("$.error").value("Post not found with id: -1"));
     }
 
     @Test
-    void shouldAllowAdminToManageAnyPost() throws Exception {
+    void shouldNotGiveAdminSpecialAccessToPosts() throws Exception {
         Account author = account("author");
         Account admin = admin("admin");
 
-        JsonNode created = createPost(author, Map.of(
-                "title", "Post do autor",
+        long postId = createPost(author, Map.of(
+                "title", "Privado do autor",
                 "content", "Conteúdo",
-                "authorIds", List.of(author.id())));
-        long postId = created.get("id").asLong();
+                "visibility", "PRIVATE",
+                "authorId", author.id())).get("id").asLong();
 
-        JsonNode updated = read(mockMvc.perform(put("/api/posts/{id}", postId)
+        mockMvc.perform(get("/api/posts/{id}", postId).header("Authorization", bearer(admin)))
+                .andExpect(status().isNotFound());
+
+        mockMvc.perform(put("/api/posts/{id}", postId)
                         .header("Authorization", bearer(admin))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(json(Map.of(
-                                "title", "Post editado pelo admin",
+                                "title", "Editado pelo admin",
                                 "content", "Conteúdo",
-                                "authorIds", List.of(admin.id())))))
-                .andExpect(status().isOk())
-                .andReturn());
-
-        assertThat(updated.get("authors").size()).isEqualTo(1);
-        assertThat(updated.get("authors").get(0).get("id").asLong()).isEqualTo(admin.id());
+                                "authorId", admin.id()))))
+                .andExpect(status().isForbidden());
 
         mockMvc.perform(delete("/api/posts/{id}", postId).header("Authorization", bearer(admin)))
-                .andExpect(status().isNoContent());
-    }
-
-    @Test
-    void shouldKeepPostsWhenCoAuthorIsDeleted() throws Exception {
-        Account alice = account("alice");
-        Account dave = account("dave");
-
-        long postId = createPost(alice, Map.of(
-                "title", "Coautoria",
-                "content", "Conteúdo",
-                "authorIds", List.of(alice.id(), dave.id()))).get("id").asLong();
-
-        userService.delete(dave.id());
-
-        JsonNode found = read(mockMvc.perform(get("/api/posts/{id}", postId).header("Authorization", bearer(alice)))
-                .andExpect(status().isOk())
-                .andReturn());
-
-        assertThat(found.get("authors").size()).isEqualTo(1);
-        assertThat(found.get("authors").get(0).get("id").asLong()).isEqualTo(alice.id());
+                .andExpect(status().isForbidden());
     }
 
     private Account account(String prefix) throws Exception {
@@ -347,6 +570,13 @@ class PostFlowIntegrationTest {
         JsonNode created = read(result);
         createdPostIds.add(created.get("id").asLong());
         return created;
+    }
+
+    private JsonNode acceptDeletion(Account account, long postId) throws Exception {
+        return read(mockMvc.perform(put("/api/posts/{id}/deletion-acceptance", postId)
+                        .header("Authorization", bearer(account)))
+                .andExpect(status().isOk())
+                .andReturn());
     }
 
     private List<Long> ids(MvcResult result) throws Exception {

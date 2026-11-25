@@ -1,6 +1,7 @@
 package com.onlyvitor.blogd.user.service;
 
 import com.onlyvitor.blogd.auth.service.RefreshTokenService;
+import com.onlyvitor.blogd.post.service.PostService;
 import com.onlyvitor.blogd.user.domain.User;
 import com.onlyvitor.blogd.user.dto.ChangePasswordRequest;
 import com.onlyvitor.blogd.user.dto.UserRequest;
@@ -25,6 +26,7 @@ public class UserService {
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
     private final RefreshTokenService refreshTokenService;
+    private final PostService postService;
 
     public List<UserResponse> listAll() {
         return userRepository.findAll().stream()
@@ -86,6 +88,7 @@ public class UserService {
             throw new UserNotFoundException(id);
         }
         refreshTokenService.revokeAllForUser(id);
+        postService.handleAuthorDeletion(id);
         userRepository.deleteById(id);
     }
 }

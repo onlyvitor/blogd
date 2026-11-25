@@ -1,14 +1,17 @@
 package com.onlyvitor.blogd.post.dto;
 
 import com.onlyvitor.blogd.post.domain.PostFormat;
+import com.onlyvitor.blogd.post.domain.PostVisibility;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
-import jakarta.validation.constraints.NotEmpty;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
 
+import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Objects;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 public record PostRequest(
         @NotBlank(message = "Title is required")
@@ -20,8 +23,12 @@ public record PostRequest(
 
         PostFormat format,
 
-        @NotEmpty(message = "At least one author is required")
-        Set<@NotNull(message = "Author id must not be null") Long> authorIds,
+        PostVisibility visibility,
+
+        @NotNull(message = "Author id is required")
+        Long authorId,
+
+        Set<@NotNull(message = "Coauthor id must not be null") Long> coauthorIds,
 
         Set<@NotNull(message = "Related post id must not be null") Long> relatedPostIds,
 
@@ -30,7 +37,15 @@ public record PostRequest(
 
     public PostRequest {
         format = format != null ? format : PostFormat.MARKDOWN;
+        visibility = visibility != null ? visibility : PostVisibility.PUBLIC;
+        coauthorIds = coauthorIds != null ? withoutAuthor(coauthorIds, authorId) : Set.of();
         relatedPostIds = relatedPostIds != null ? relatedPostIds : Set.of();
         attachments = attachments != null ? attachments : List.of();
+    }
+
+    private static Set<Long> withoutAuthor(Set<Long> coauthorIds, Long authorId) {
+        return coauthorIds.stream()
+                .filter(coauthorId -> !Objects.equals(coauthorId, authorId))
+                .collect(Collectors.toCollection(LinkedHashSet::new));
     }
 }

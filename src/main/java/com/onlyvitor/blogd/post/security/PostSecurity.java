@@ -16,12 +16,15 @@ public class PostSecurity {
     private final UserSecurity userSecurity;
 
     public boolean isAuthor(Authentication authentication, Long postId) {
-        return postRepository.findAuthorIdsByPostId(postId).stream()
-                .anyMatch(authorId -> userSecurity.isSelf(authentication, authorId));
+        boolean isMainAuthor = postRepository.findAuthorIdByPostId(postId)
+                .map(authorId -> userSecurity.isSelf(authentication, authorId))
+                .orElse(false);
+        return isMainAuthor || postRepository.findCoauthorIdsByPostId(postId).stream()
+                .anyMatch(coauthorId -> userSecurity.isSelf(authentication, coauthorId));
     }
 
-    public boolean includesSelf(Authentication authentication, Set<Long> authorIds) {
-        return authorIds.stream()
-                .anyMatch(authorId -> userSecurity.isSelf(authentication, authorId));
+    public boolean includesSelf(Authentication authentication, Long authorId, Set<Long> coauthorIds) {
+        return userSecurity.isSelf(authentication, authorId) || coauthorIds.stream()
+                .anyMatch(coauthorId -> userSecurity.isSelf(authentication, coauthorId));
     }
 }

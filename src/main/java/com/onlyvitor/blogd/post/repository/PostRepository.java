@@ -14,13 +14,24 @@ import java.util.Optional;
 public interface PostRepository extends JpaRepository<Post, Long> {
 
     @Override
-    @EntityGraph(attributePaths = {"authors", "relatedPosts", "attachments"})
-    List<Post> findAll();
-
-    @Override
-    @EntityGraph(attributePaths = {"authors", "relatedPosts", "attachments"})
+    @EntityGraph(attributePaths = {"author", "coauthors", "deletionAcceptances", "relatedPosts", "attachments"})
     Optional<Post> findById(Long id);
 
-    @Query("select a.id from Post p join p.authors a where p.id = :postId")
-    List<Long> findAuthorIdsByPostId(@Param("postId") Long postId);
+    @EntityGraph(attributePaths = {"author", "coauthors", "deletionAcceptances", "relatedPosts", "attachments"})
+    @Query("""
+            select distinct p from Post p
+            left join p.coauthors c
+            where p.visibility = com.onlyvitor.blogd.post.domain.PostVisibility.PUBLIC
+               or p.author.id = :userId
+               or c.id = :userId
+            """)
+    List<Post> findAllVisibleTo(@Param("userId") Long userId);
+
+    @Query("select p.author.id from Post p where p.id = :postId")
+    Optional<Long> findAuthorIdByPostId(@Param("postId") Long postId);
+
+    @Query("select c.id from Post p join p.coauthors c where p.id = :postId")
+    List<Long> findCoauthorIdsByPostId(@Param("postId") Long postId);
+
+    List<Post> findAllByAuthorId(Long authorId);
 }
