@@ -173,7 +173,7 @@ class PostServiceTest {
                 .username("user" + id)
                 .password("encoded")
                 .email("user" + id + "@example.com")
-                .role(Role.USUARIO)
+                .role(Role.USER)
                 .build();
     }
 }

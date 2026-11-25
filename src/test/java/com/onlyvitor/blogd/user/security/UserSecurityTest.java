@@ -19,7 +19,7 @@ class UserSecurityTest {
 
     @Test
     void shouldMatchAuthenticatedUserById() {
-        UserAuthenticated principal = new UserAuthenticated(user(1L, Role.USUARIO));
+        UserAuthenticated principal = new UserAuthenticated(user(1L, Role.USER));
         Authentication authentication = new UsernamePasswordAuthenticationToken(
                 principal, null, principal.getAuthorities());
 
@@ -52,7 +52,7 @@ class UserSecurityTest {
 
     @Test
     void shouldNotIdentifyRegularUserAsAdmin() {
-        UserAuthenticated principal = new UserAuthenticated(user(1L, Role.USUARIO));
+        UserAuthenticated principal = new UserAuthenticated(user(1L, Role.USER));
         Authentication authentication = new UsernamePasswordAuthenticationToken(
                 principal, null, principal.getAuthorities());
 

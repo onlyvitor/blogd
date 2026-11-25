@@ -65,7 +65,7 @@ class AuthFlowIntegrationTest {
         String refreshToken = login.get("refreshToken").asText();
 
         assertThat(login.get("user").get("username").asText()).isEqualTo(username);
-        assertThat(login.get("user").get("role").asText()).isEqualTo("USUARIO");
+        assertThat(login.get("user").get("role").asText()).isEqualTo("USER");
 
         mockMvc.perform(get("/api/users/{id}", userId)
                         .header("Authorization", "Bearer " + accessToken))
@@ -163,7 +163,7 @@ class AuthFlowIntegrationTest {
                                 "email", username + "@example.com",
                                 "role", "ADMIN"))))
                 .andExpect(status().isCreated())
-                .andExpect(jsonPath("$.role").value("USUARIO"));
+                .andExpect(jsonPath("$.role").value("USER"));
     }
 
     private long register(String username) throws Exception {

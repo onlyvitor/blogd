@@ -44,7 +44,7 @@ public class User {
                 .username(request.username())
                 .password(encodedPassword)
                 .email(request.email())
-                .role(isAdmin ? request.role() : Role.USUARIO)
+                .role(isAdmin ? request.role() : Role.USER)
                 .build();
     }
 

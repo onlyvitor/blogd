@@ -24,6 +24,6 @@ public record UserRequest(
 ) {
 
     public UserRequest {
-        role = role != null ? role : Role.USUARIO;
+        role = role != null ? role : Role.USER;
     }
 }

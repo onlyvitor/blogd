@@ -101,7 +101,7 @@ class AuthServiceTest {
 
     @Test
     void shouldIssueNewTokensWhenRefreshing() {
-        User user = user(Role.USUARIO);
+        User user = user(Role.USER);
         when(refreshTokenService.validateAndRotate("old-refresh-token"))
                 .thenReturn(Optional.of(RefreshToken.builder().userId(1L).build()));
         when(userRepository.findById(1L)).thenReturn(Optional.of(user));

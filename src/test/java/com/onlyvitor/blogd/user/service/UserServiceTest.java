@@ -68,7 +68,7 @@ class UserServiceTest {
 
         ArgumentCaptor<User> captor = ArgumentCaptor.forClass(User.class);
         verify(userRepository).save(captor.capture());
-        assertThat(captor.getValue().getRole()).isEqualTo(Role.USUARIO);
+        assertThat(captor.getValue().getRole()).isEqualTo(Role.USER);
     }
 
     @Test
@@ -94,12 +94,12 @@ class UserServiceTest {
 
         ArgumentCaptor<User> captor = ArgumentCaptor.forClass(User.class);
         verify(userRepository).save(captor.capture());
-        assertThat(captor.getValue().getRole()).isEqualTo(Role.USUARIO);
+        assertThat(captor.getValue().getRole()).isEqualTo(Role.USER);
     }
 
     @Test
     void shouldRehashPasswordWhenUpdatingUser() {
-        User existing = existingUser(Role.USUARIO);
+        User existing = existingUser(Role.USER);
         when(userRepository.findById(1L)).thenReturn(Optional.of(existing));
         when(userRepository.save(any(User.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
@@ -116,11 +116,11 @@ class UserServiceTest {
 
     @Test
     void shouldReplaceUsernameAndEmailWhenUpdatingUser() {
-        User existing = existingUser(Role.USUARIO);
+        User existing = existingUser(Role.USER);
         when(userRepository.findById(1L)).thenReturn(Optional.of(existing));
         when(userRepository.save(any(User.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
-        userService.update(1L, new UserRequest("novo", RAW_PASSWORD, "novo@example.com", Role.USUARIO), false);
+        userService.update(1L, new UserRequest("novo", RAW_PASSWORD, "novo@example.com", Role.USER), false);
 
         ArgumentCaptor<User> captor = ArgumentCaptor.forClass(User.class);
         verify(userRepository).save(captor.capture());
@@ -130,7 +130,7 @@ class UserServiceTest {
 
     @Test
     void shouldKeepRoleWhenNonAdminUpdatesUser() {
-        User existing = existingUser(Role.USUARIO);
+        User existing = existingUser(Role.USER);
         when(userRepository.findById(1L)).thenReturn(Optional.of(existing));
         when(userRepository.save(any(User.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
@@ -138,12 +138,12 @@ class UserServiceTest {
 
         ArgumentCaptor<User> captor = ArgumentCaptor.forClass(User.class);
         verify(userRepository).save(captor.capture());
-        assertThat(captor.getValue().getRole()).isEqualTo(Role.USUARIO);
+        assertThat(captor.getValue().getRole()).isEqualTo(Role.USER);
     }
 
     @Test
     void shouldUpdateRoleWhenAdminUpdatesUser() {
-        User existing = existingUser(Role.USUARIO);
+        User existing = existingUser(Role.USER);
         when(userRepository.findById(1L)).thenReturn(Optional.of(existing));
         when(userRepository.save(any(User.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
@@ -156,7 +156,7 @@ class UserServiceTest {
 
     @Test
     void shouldChangePasswordAndRevokeSessionsWhenCurrentPasswordMatches() {
-        User existing = existingUser(Role.USUARIO);
+        User existing = existingUser(Role.USER);
         when(userRepository.findById(1L)).thenReturn(Optional.of(existing));
         when(userRepository.save(any(User.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
@@ -173,7 +173,7 @@ class UserServiceTest {
 
     @Test
     void shouldRejectPasswordChangeWhenCurrentPasswordDoesNotMatch() {
-        User existing = existingUser(Role.USUARIO);
+        User existing = existingUser(Role.USER);
         when(userRepository.findById(1L)).thenReturn(Optional.of(existing));
 
         assertThatThrownBy(() ->
@@ -205,7 +205,7 @@ class UserServiceTest {
     }
 
     private UserRequest request() {
-        return request(Role.USUARIO);
+        return request(Role.USER);
     }
 
     private UserRequest request(Role role) {
